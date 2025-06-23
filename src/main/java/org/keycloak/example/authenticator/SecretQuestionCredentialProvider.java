@@ -36,6 +36,11 @@ public class SecretQuestionCredentialProvider implements CredentialProvider<Secr
         if (!(credentialInput.getType().equals(getType()))) return false;
         String challengeResponse = credentialInput.getChallengeResponse();
         if (challengeResponse == null) return false;
+        String credentialId = credentialInput.getCredentialId();
+        if (credentialId == null || credentialId.isEmpty()) {
+            logger.debug("凭据ID为空，可能是其他类型的登录");
+            return false;
+        }
 
         // 从存储区获取CredentialModel，然后转化为自定义Model
         CredentialModel cm = userModel.credentialManager().getStoredCredentialById(credentialInput.getCredentialId());
