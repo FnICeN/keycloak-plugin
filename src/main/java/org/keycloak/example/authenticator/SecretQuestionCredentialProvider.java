@@ -55,7 +55,7 @@ public class SecretQuestionCredentialProvider implements CredentialProvider<Secr
         return SecretQuestionCredentialModel.TYPE;
     }
 
-    // 存储自定义Model到存储区
+    // 存储自定义Model到存储区（即，将封装好的Model对象存储到【凭证】）
     @Override
     public CredentialModel createCredential(RealmModel realmModel, UserModel userModel, SecretQuestionCredentialModel secretQuestionCredentialModel) {
         if (secretQuestionCredentialModel.getCreatedDate() == null)
