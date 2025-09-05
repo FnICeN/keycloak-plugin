@@ -1,5 +1,8 @@
 package org.keycloak.example.authenticator;
 
+import com.DeviceAuthApi.DeviceAuthConstants;
+import com.DeviceAuthApi.DeviceAuthCredentialModel;
+import com.DeviceAuthApi.DeviceAuthCredentialProvider;
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.NewCookie;
@@ -28,11 +31,11 @@ public class SecretQuestionAuthenticator implements Authenticator, CredentialVal
     @Override
     public void authenticate(AuthenticationFlowContext authenticationFlowContext) {
         logger.info("进入认证，呈现页面...");
-        if (hasCookie(authenticationFlowContext)) {
+//        if (hasCookie(authenticationFlowContext)) {
             // 将上下文标记为success然后返回
-            authenticationFlowContext.success();
-            return;
-        }
+//            authenticationFlowContext.success();
+//            return;
+//        }
         // 没回答过，创建一个页面然后作为挑战呈现给用户
         // 这里的页面是使用已有的模板通过FreeMaker页面构建器构建的，创建后得到JAX-RS Response对象
         Response challenge = authenticationFlowContext.form().createForm("secret-question.ftl");
@@ -55,7 +58,19 @@ public class SecretQuestionAuthenticator implements Authenticator, CredentialVal
             return;
         }
         // 答案正确，记录Cookie然后给上下文标记成功
+        // 如果是由DeviceAuth转来，则保存设备信息
         setCookie(authenticationFlowContext);
+        if (isRegisterDevice(authenticationFlowContext)) {
+            logger.info("隐私问题认证成功，保存设备信息...");
+            String cpuid = authenticationFlowContext.getAuthenticationSession().getClientNote("cpuid");
+            String visitorId = authenticationFlowContext.getAuthenticationSession().getClientNote("visitorId");
+            logger.info("cpuid: " + cpuid);
+            logger.info("visitorId: " + visitorId);
+            DeviceAuthCredentialProvider dacp = (DeviceAuthCredentialProvider) authenticationFlowContext.getSession().getProvider(CredentialProvider.class, DeviceAuthConstants.credentialProviderFactoryID);
+            dacp.createCredential(authenticationFlowContext.getRealm(), authenticationFlowContext.getUser(), DeviceAuthCredentialModel.createDeviceAuth("new", cpuid, visitorId));
+            // TODO：确保设备名称不相同，否则会导致系统错误
+            logger.info("成功保存新设备信息");
+        }
         authenticationFlowContext.success();
     }
 
@@ -100,6 +115,11 @@ public class SecretQuestionAuthenticator implements Authenticator, CredentialVal
         // 构造能够使Provider.isValid()进行判断的UserCredentialModel实例
         UserCredentialModel input = new UserCredentialModel(credentialId, getType(context.getSession()), secret);
         return getCredentialProvider(context.getSession()).isValid(context.getRealm(), context.getUser(), input);
+    }
+
+    protected boolean isRegisterDevice(AuthenticationFlowContext context) {
+        String registeringDevice = context.getAuthenticationSession().getClientNote("registeringDevice");
+        return "true".equals(registeringDevice);
     }
 
     // 需要认证的内容是与用户关联的，所以需要返回True

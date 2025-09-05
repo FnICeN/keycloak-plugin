@@ -12,4 +12,7 @@ public class SecretQuestionSecretData {
     public SecretQuestionSecretData(@JsonProperty("secret")String answer) {
         this.answer = answer;
     }
+//    public String getAnswer() {
+//        return answer;
+//    }
 }
